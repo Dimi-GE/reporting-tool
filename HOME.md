@@ -6,20 +6,14 @@ The Home view is the landing page of the app. It gives an at-a-glance picture of
 
 ## KPI Row
 
-Four cards at the top summarise the most important numbers at a glance.
+Two cards at the top, both a shared split layout: an icon, a two-line breakdown stack on the left, and an independent result value on the right. The stack is always shown at full height on both cards — even when its rows are zero — so the row never resizes.
 
-- **Total Saved** — all-time net reserve balance: cumulative savings across every category and period, minus any *Savings* withdrawals (Expenses type, Savings category). This is the running total from the first entry to the most recent, not scoped to any month. Because savings can sit in foreign currencies (via *Savings → Other*), this figure is an **approximate total converted into the regional currency** and is prefixed with `≈`. Conversion uses the exchange rates managed in Settings (live rates with optional manual overrides); currencies without a known rate are counted at face value.
-- **Monthly Income** — *earned* income recorded in the reference month (see below). Starting Funds (the opening balance) is excluded, so a month containing only an opening balance does not register as having income.
-- **Monthly Expenses** — total expenses recorded in the reference month.
-- **Available** — the all-time spendable balance: `Opening Balance + Income − Savings (Flow type only) − Expenses`. This is your running pool of liquid money — the opening balance and all earned income, less whatever you moved into the reserve (Savings → Flow) and everything you spent. Reserve withdrawals and *Savings → Other* deposits do not affect it. It is the same figure the Dashboard used to show as "Flow", computed from the shared `recalculateTotals()`. Turns red when negative. Unlike the two monthly cards beside it, this is an all-time balance (like Total Saved).
+- **Runway** — this calendar month's `Income − Expenses`, nothing else. The stack shows the month's Income (top) and Expenses (bottom); the result is their difference, red when negative. It deliberately ignores Starting Funds and every prior month, so it reads as a pure in-month drift, independent of Available beside it. Always the true current calendar month — never falls back to a past month, even before this month has any income recorded.
+- **Together** — the stack shows its two components: **Available** (top) — the all-time spendable balance, `Opening Balance + Income − Savings (Flow type only) − Expenses`; your running pool of liquid money after everything you moved into the reserve (Savings → Flow) and everything you spent (reserve withdrawals and *Savings → Other* deposits do not affect it). It's the same figure the Dashboard used to show as "Flow", computed from the shared `recalculateTotals()`. And **Potential** (bottom) — the all-time net of Potential Income minus Potential Expenses, a partner's money stream reconciled monthly rather than tracked daily (see DASHBOARD.md). Potential reads `0.00` when no Potential entries exist, rather than being hidden, so the card's shape never changes between solo and partnered use. The result, on the right, is their sum — `Available + Potential` — red when negative; in solo use (Potential always zero) it's simply equal to Available.
 
-  **Potential sub-value.** When any *Potential*-type entries exist (a partner's money stream — see DASHBOARD.md), the Available card grows a two-line sub-value beneath the main figure: **potential** — the all-time net of Potential Income minus Potential Expenses, a *growing* pool you reconcile monthly rather than track daily — and **together**, the combined `Available + potential`. This mirrors the actual → projected → total presentation of the Forecasting cards. Potential money is otherwise excluded from Available and from every other card and analytic; if no Potential entries exist, the sub-value is hidden and the card looks exactly as it did for solo use.
+Total Saved is not a standalone card — see **Savings Holdings** below, where it lives as that panel's bottom-line total.
 
-### Reference Month
-
-The Monthly Income and Monthly Expenses cards and the Financial Health panel operate against a single reference month rather than the current calendar month unconditionally. (Total Saved and Available are all-time balances and ignore the reference month.) The reference month is the current month if it has any *earned* income recorded (Starting Funds does not count). If it does not — for example, at the start of a new month before any entries have been made — the view walks back up to 12 months to find the most recent month that does have income and uses that instead.
-
-This prevents the cards from showing zeros at the start of a new month when the previous month's data is the meaningful context. The Financial Health panel always shows which month is being used.
+Runway's breakdown is monthly; Together's is all-time. They are two independent balances shown side by side, not meant to reconcile against each other via subtraction.
 
 ---
 
@@ -31,13 +25,13 @@ Amounts are gross savings deposits — the sum of every *Savings*-type entry in 
 
 The currency shown on each entry comes from the Dashboard entry form; the regional currency is applied by default, with foreign currencies possible on *Savings → Other* entries. Holding types (Cash, Card, Bank, Other) are also set on the Dashboard when the entry type is Savings.
 
+**Total Saved** — a bottom-line total beneath the sheet (shown even with no data recorded yet). Unlike the gross per-row amounts above, this is the **net** all-time reserve balance: cumulative savings across every category and period, minus any *Savings* withdrawals (Expenses type, Savings category). Because savings can sit in foreign currencies, this figure is an **approximate total converted into the regional currency** and is prefixed with `≈`. Conversion uses the exchange rates managed in Settings (live rates with optional manual overrides); currencies without a known rate are counted at face value.
+
 ---
 
 ## Recent Transactions
 
-The 5 most recent committed entries across all types, sorted newest first. Because entries are day-level only, entries sharing a date are ordered by commit order (most recently committed first). Each row shows the date, the category label in plain white text, and the amount with a sign prefix (`+` for income, `~` for savings, `−` for expenses). *Potential* entries are signed by their own direction (`+` for Potential Income, `−` for Potential Expenses) and carry a small *potential* tag. The amount is colour-coded by direction: green for money in (income and savings), red for expenses, indigo for potential.
-
-This is a read-only snapshot. The full transaction list with filters is in the Dashboard.
+The same transaction-history component as the Dashboard (see DASHBOARD.md), embedded here at a smaller footprint rather than a separate read-only summary — type/category filters, the Full History expand-to-overlay, and the per-entry pencil editor all work identically. Saving an edit here recalculates totals, persists, pushes to any connected sync, and refreshes the whole Home view immediately, the same as it does from the Dashboard.
 
 ---
 
@@ -45,13 +39,11 @@ This is a read-only snapshot. The full transaction list with filters is in the D
 
 A donut chart of the current month's expenses by category, showing each category's share of total spending for that month. Only categories with non-zero spend appear. If there are no expenses this month, the panel shows a no-data state.
 
-This panel always uses the current calendar month, regardless of which reference month the KPI row has resolved to.
-
 ---
 
 ## Financial Health
 
-Three ratio bars measuring the reference month's numbers against common financial health thresholds. Each bar fills relative to its ceiling or target, and is colour-coded by status.
+Three ratio bars measuring the current calendar month's numbers against common financial health thresholds — the same current-month scope as the Runway card, with no fallback to a past month. Each bar fills relative to its ceiling or target, and is colour-coded by status.
 
 **Savings Rate** — income-funded savings (Flow-category only) as a percentage of income. *Savings → Other* deposits (external money entering the reserve) and reserve withdrawals are deliberately excluded, so the rate reflects how much of your income you set aside and cannot exceed 100% or go negative. Target: ≥ 20%. Green at or above target, amber between 10–20%, red below 10%.
 
@@ -59,4 +51,4 @@ Three ratio bars measuring the reference month's numbers against common financia
 
 **Rent Burden** — rent specifically as a percentage of income. Ceiling: 30%. Same colour logic as Expense Ratio.
 
-When the reference month has no income all three bars show `--` and remain empty, since ratios against zero income are meaningless. The panel header always shows which month the ratios are calculated against.
+When the current month has no income yet all three bars show `--` and remain empty, since ratios against zero income are meaningless. The panel header always shows which month the ratios are calculated against.

@@ -25,12 +25,12 @@
 /* KPI row */
 .home-kpi-row {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 12px;
 }
 
-@media (max-width: 900px) {
-    .home-kpi-row { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 700px) {
+    .home-kpi-row { grid-template-columns: 1fr; }
 }
 
 .home-card {
@@ -84,53 +84,59 @@
     color: #e05c5c;
 }
 
-/* Partner "Potential" sub-value under the Available card */
-.home-card__potential {
+/* Split layout: icon + a left breakdown stack + an independent result value
+   on the right. Used by Runway (Income/Expenses → net) and Available
+   (Potential/Together → all-time balance) so both cards share one fixed
+   shape regardless of whether Potential data exists. */
+.home-card__body--split {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.home-card__stack {
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    margin-top: 4px;
-    padding-top: 8px;
-    border-top: 1px dashed var(--border);
+    gap: 6px;
 }
 
-.home-card__sub {
+.home-card__stack-row {
     display: flex;
     align-items: baseline;
-    gap: 5px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #7e88c9;
+    gap: 6px;
 }
 
-.home-card__sub i {
-    font-size: 12px;
-    align-self: center;
-}
-
-.home-card__sub--negative {
-    color: #e05c5c;
-}
-
-.home-card__together {
-    display: flex;
-    align-items: baseline;
-    gap: 5px;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-primary);
-}
-
-.home-card__together--negative {
-    color: #e05c5c;
-}
-
-.home-card__sub-label {
+.home-card__stack-label {
     font-size: 10px;
     font-weight: 400;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--text-muted);
+    width: 58px;
+    flex-shrink: 0;
+}
+
+.home-card__stack-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.home-card__stack-value--income  { color: #4caf7d; }
+.home-card__stack-value--expense { color: #e05c5c; }
+.home-card__stack-value--negative { color: #e05c5c; }
+
+.home-card__result {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.home-card__result .home-card__value {
+    font-size: 20px;
 }
 
 /* Main grid */
@@ -184,6 +190,12 @@
     gap: 10px;
 }
 
+/* No padding of its own — the embedded component (e.g. tx-history) brings
+   its own internal spacing, so the panel body stays flush around it. */
+.home-panel__body--flush {
+    padding: 0;
+}
+
 .home-panel__body--center {
     display: flex;
     align-items: center;
@@ -194,56 +206,6 @@
 .home-panel__body--chart {
     height: 140px;
     padding: 12px 16px;
-}
-
-/* Transaction list */
-.home-tx-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 12px;
-    padding: 6px 0;
-    border-bottom: 1px solid var(--border);
-}
-
-.home-tx-item:last-child {
-    border-bottom: none;
-}
-
-.home-tx-date {
-    color: var(--text-muted);
-    flex-shrink: 0;
-    width: 82px;
-}
-
-.home-tx-cat {
-    color: var(--text-primary);
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.home-tx-amount {
-    font-weight: 600;
-    flex-shrink: 0;
-}
-
-.home-tx-amount--income    { color: #4caf7d; }
-.home-tx-amount--savings   { color: #4caf7d; }
-.home-tx-amount--expenses  { color: #e05c5c; }
-.home-tx-amount--potential { color: #7e88c9; }
-
-.home-tx-tag {
-    font-size: 9px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #7e88c9;
-    border: 1px solid #7e88c9;
-    border-radius: 3px;
-    padding: 0 4px;
-    margin-left: 6px;
-    vertical-align: middle;
 }
 
 /* Savings holdings sheet */
@@ -295,6 +257,29 @@
 
 .holdings-type {
     color: var(--text-muted);
+}
+
+/* Savings holdings bottom-line total */
+.holdings-total {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+}
+
+.holdings-total__label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.holdings-total__value {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
 }
 
 /* Donut chart */
@@ -437,4 +422,22 @@
     background: var(--accent);
     opacity: 0.5;
     border-radius: 99px;
+}
+
+/* Embedded tx-history (views/dashboard/tx-history) fitted to this panel's
+   collapsed footprint only — scoped to :not(.expanded) so "Full History"
+   still opens the identical fixed, viewport-centered overlay Dashboard uses
+   (tx-history.css), title included, rather than inheriting these overrides. */
+.home-tx-embed .tx-container:not(.expanded) .tx-header .section-title {
+    display: none;
+}
+
+.home-tx-embed .tx-container:not(.expanded) .tx-header {
+    margin: 10px 12px 8px;
+    justify-content: flex-end;
+}
+
+.home-tx-embed .tx-container:not(.expanded) .tx-list {
+    margin: 0 12px 12px;
+    max-height: calc(4 * 41px);
 }

@@ -1,0 +1,120 @@
+/* Entry editor modal — shared by Dashboard and Home's embedded transaction
+   list (components/entry-editor). Self-contained: does not depend on
+   dashboard.css, since it can be opened from either view. */
+
+.entry-editor-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: none;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+}
+
+.entry-editor-backdrop.open { display: block; }
+
+.entry-editor {
+    position: fixed;
+    z-index: 1001;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.98);
+    width: min(460px, calc(100vw - 32px));
+    background: var(--surface);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 20px;
+    display: none;
+    opacity: 0;
+    box-shadow: 0 10px 50px rgba(0, 0, 0, 0.6);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.entry-editor.open {
+    display: block;
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.entry-editor__title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+}
+
+.entry-editor__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.entry-editor__field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+}
+
+.entry-editor__field--full { grid-column: 1 / -1; }
+
+.entry-editor__field input,
+.entry-editor__field select {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    color: var(--text-primary);
+    padding: 8px 10px;
+    font-size: 14px;
+    border-radius: 4px;
+    outline: none;
+    height: 38px;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.entry-editor__field input:focus,
+.entry-editor__field select:focus { border-color: var(--accent); }
+
+.entry-editor__field input[type="date"] { color-scheme: dark; }
+.entry-editor__field select:disabled { opacity: 0.55; cursor: default; }
+
+.entry-editor__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.entry-editor__save {
+    width: auto;
+    padding: 8px 22px;
+    background-color: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.entry-editor__save:hover { opacity: 0.85; }
+
+.entry-editor__cancel {
+    background-color: transparent;
+    border: 1px solid var(--card-border);
+    color: var(--text-muted);
+    padding: 8px 14px;
+    font-size: 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.entry-editor__cancel:hover { border-color: var(--text-muted); color: var(--text-primary); }

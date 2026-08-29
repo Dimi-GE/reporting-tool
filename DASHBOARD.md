@@ -34,8 +34,8 @@ It still appears in the transaction list (as an outflow) so the withdrawal is on
 
 **Potential** is a separate *type* for a partner's money — funds that are "potentially" available to the household but that you don't control on a daily basis, only reconcile once a month (a partner's earnings and spending). It is deliberately isolated from every controlled total and analytic:
 - Its two categories, **Income** and **Expenses**, record only the direction of each entry. The net of the two (income − expenses) accumulates into a single **growing potential pool**.
-- It **never touches Flow / Available**, the Monthly Income or Monthly Expenses cards, or any Behavior Analytics view (trends, heatmaps, forecast) — those all operate on the Income/Savings/Expenses types and ignore Potential entirely.
-- It surfaces in exactly one place: as a sub-value under the Home **Available** card (see HOME.md), where it is added to Available to show the couple's combined pool.
+- It **never touches Flow / Available**, the Home **Runway** card, or any Behavior Analytics view (trends, heatmaps, forecast) — those all operate on the Income/Savings/Expenses types and ignore Potential entirely.
+- It surfaces in exactly one place: as a breakdown row on the Home **Together** card (see HOME.md), where it is added to Available to show the couple's combined pool.
 
 Like every other type it appears in the transaction list (tagged *potential*), and currency is locked to the regional currency.
 
@@ -49,7 +49,7 @@ Entries added via the form go into a staging area before they are committed. Thi
 
 Each staged entry shows date, amount, type, and category. Individual entries can be deleted from staging before committing. The **Apply** button commits all staged entries at once and updates every view in the app immediately. Until Apply is pressed, all analytics remain unchanged.
 
-The Dashboard no longer carries an Overview card row — the at-a-glance totals live on the **Home** view (Total Saved, Monthly Income, Monthly Expenses, and **Available** — the all-time spendable balance that was previously the Dashboard's "Flow" card). The Dashboard is focused on entry, the expense breakdown, and the transaction record.
+The Dashboard no longer carries an Overview card row — the at-a-glance totals live on the **Home** view (**Runway**, this month's Income − Expenses; and **Together**, built on Available — the all-time spendable balance that was previously the Dashboard's "Flow" card; see HOME.md). The Dashboard is focused on entry, the expense breakdown, and the transaction record.
 
 ---
 
@@ -78,5 +78,7 @@ A reverse-chronological list of all committed entries, displayed below the expen
 **Full History** — by default the list shows a compact view. Clicking *Full History* expands it into an overlay panel that covers the page, with a backdrop click to dismiss. This keeps the dashboard uncluttered day-to-day while still providing access to the complete record when needed.
 
 **Editing entries** — each row (in both the compact and expanded states) has a pencil button that opens an editor modal for that committed entry. All fields are editable — date, amount, type, category, currency, holding, and note — following the same rules as the New Entry form (category list depends on type; currency locks to the regional currency except for *Savings → Other*; holding shows only for Savings). Saving recalculates all totals, persists, pushes to any connected sync, and re-renders every view immediately. This replaces the previous export-edit-reimport workaround for fixing mistakes such as a wrong date.
+
+This whole component (list, filters, Full History, editor) is shared — Home embeds the identical component at a smaller size in its own Recent Transactions panel (see HOME.md), rather than a separate implementation.
 
 ---

@@ -7,42 +7,41 @@
 
     <!-- KPI Row -->
     <div class="home-kpi-row">
-        <div class="home-card">
-            <div class="home-card__icon"><i class="ti ti-coin"></i></div>
-            <div class="home-card__body">
-                <span class="home-card__label">Total Saved</span>
-                <span class="home-card__value" id="home-total-saved">--</span>
+        <div class="home-card home-card--split">
+            <div class="home-card__icon"><i class="ti ti-scale"></i></div>
+            <div class="home-card__body home-card__body--split">
+                <div class="home-card__stack">
+                    <div class="home-card__stack-row">
+                        <span class="home-card__stack-label">Income</span>
+                        <span class="home-card__stack-value home-card__stack-value--income" id="home-runway-income">--</span>
+                    </div>
+                    <div class="home-card__stack-row">
+                        <span class="home-card__stack-label">Expenses</span>
+                        <span class="home-card__stack-value home-card__stack-value--expense" id="home-runway-expenses">--</span>
+                    </div>
+                </div>
+                <div class="home-card__result">
+                    <span class="home-card__label">Runway</span>
+                    <span class="home-card__value" id="home-runway">--</span>
+                </div>
             </div>
         </div>
-        <div class="home-card">
-            <div class="home-card__icon"><i class="ti ti-trending-up"></i></div>
-            <div class="home-card__body">
-                <span class="home-card__label">Monthly Income</span>
-                <span class="home-card__value" id="home-monthly-income">--</span>
-            </div>
-        </div>
-        <div class="home-card">
-            <div class="home-card__icon"><i class="ti ti-trending-down"></i></div>
-            <div class="home-card__body">
-                <span class="home-card__label">Monthly Expenses</span>
-                <span class="home-card__value" id="home-monthly-expenses">--</span>
-            </div>
-        </div>
-        <div class="home-card">
+        <div class="home-card home-card--split">
             <div class="home-card__icon"><i class="ti ti-cash"></i></div>
-            <div class="home-card__body">
-                <span class="home-card__label">Available</span>
-                <span class="home-card__value" id="home-available">--</span>
-                <div class="home-card__potential" id="home-potential-block" hidden>
-                    <span class="home-card__sub">
-                        <i class="ti ti-users"></i>
-                        <span id="home-potential">--</span>
-                        <span class="home-card__sub-label">potential</span>
-                    </span>
-                    <span class="home-card__together">
-                        <span id="home-together">--</span>
-                        <span class="home-card__sub-label">together</span>
-                    </span>
+            <div class="home-card__body home-card__body--split">
+                <div class="home-card__stack">
+                    <div class="home-card__stack-row">
+                        <span class="home-card__stack-label">Available</span>
+                        <span class="home-card__stack-value" id="home-available">--</span>
+                    </div>
+                    <div class="home-card__stack-row">
+                        <span class="home-card__stack-label">Potential</span>
+                        <span class="home-card__stack-value" id="home-potential">--</span>
+                    </div>
+                </div>
+                <div class="home-card__result">
+                    <span class="home-card__label">Together</span>
+                    <span class="home-card__value" id="home-together">--</span>
                 </div>
             </div>
         </div>
@@ -58,6 +57,10 @@
             </div>
             <div class="home-panel__body">
                 <div id="home-holdings" class="home-holdings"></div>
+                <div class="holdings-total">
+                    <span class="holdings-total__label">Total Saved</span>
+                    <span class="holdings-total__value" id="home-holdings-total">--</span>
+                </div>
             </div>
         </div>
 
@@ -66,8 +69,10 @@
                 <i class="ti ti-list"></i>
                 <span>Recent Transactions</span>
             </div>
-            <div class="home-panel__body home-panel__body--list">
-                <div id="home-tx-list"></div>
+            <div class="home-panel__body home-panel__body--flush">
+                <!-- Full tx-history component (Dashboard's), injected by home.js
+                     and fitted to this panel's footprint via .home-tx-embed. -->
+                <div id="home-tx-history-slot" class="home-tx-embed"></div>
             </div>
         </div>
 

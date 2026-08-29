@@ -3,17 +3,9 @@ function initDashboard() {
 
     const STORAGE_KEY = 'dashboard_committed';
 
-    const categories = {
-        income:   ['Starting Funds', 'Salary', 'Other'],
-        savings:  ['Flow', 'Other'],
-        // Spend categories come from the shared EXPENSE_CATEGORIES (app.js); the
-        // "Savings" reserve-withdrawal category is appended as it is special.
-        expenses: [
-            ...EXPENSE_CATEGORIES.map(c => c.label),
-            'Savings'   // withdrawal from the reserve (nets down Savings, not an expense)
-        ],
-        potential: ['Income', 'Expenses'],   // partner stream, direction only; see isPotential()
-    };
+    // Category options per type come from the shared ENTRY_CATEGORIES (app.js),
+    // used identically by the entry editor modal (components/entry-editor).
+    const categories = ENTRY_CATEGORIES;
 
     let committed = {
         income: 0, savings: 0, savingsFromFlow: 0,
@@ -58,11 +50,6 @@ function initDashboard() {
     });
 
     // --- localStorage ---
-    function saveToStorage() {
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(committed)); }
-        catch(e) { console.warn('Could not save:', e); }
-    }
-
     function loadFromStorage() {
         try {
             const raw = localStorage.getItem(STORAGE_KEY);
@@ -205,179 +192,21 @@ function initDashboard() {
     });
 
     // --- Commit a new set of entries and refresh all views ---
+    // commitEntries() (app.js) handles recalc + persist + Gist push, shared
+    // with any other view that commits an edit (e.g. Home's embedded list).
     function applyCommitted(entries) {
-        committed = recalculateTotals(entries);
+        committed = commitEntries(entries);
         startingFundsLocked = committed.entries.some(e => e.category === 'starting_funds');
         populateCategories();
         renderTxList(committed.entries);
         renderExpensesChart(committed.entries);
-        saveToStorage();
-        // Stamp local freshness on every commit, independent of any sync
-        // connection, so a later Connect can compare ages correctly.
-        window.GistBackup?.markLocalModified?.();
-        pushToGist();
     }
     window.applyPeriodImport = applyCommitted;
 
-    // --- Entry editor (edit committed entries from the Full History list) ---
-    let editorEls   = null;
-    let editingEntry = null;
-
-    function escHandler(e) { if (e.key === 'Escape') closeEditor(); }
-
-    function buildEditor() {
-        // Drop any editor left over from a previous init of this view.
-        document.querySelectorAll('.entry-editor-backdrop, .entry-editor').forEach(el => el.remove());
-
-        const wrap = document.createElement('div');
-        wrap.innerHTML = `
-            <div class="entry-editor-backdrop" id="entry-editor-backdrop"></div>
-            <div class="entry-editor" id="entry-editor" role="dialog" aria-modal="true" aria-label="Edit entry">
-                <div class="entry-editor__title">Edit Entry</div>
-                <div class="entry-editor__grid">
-                    <label class="entry-editor__field"><span>Date</span><input type="date" id="edit-date"></label>
-                    <label class="entry-editor__field"><span>Amount</span><input type="number" id="edit-amount" step="0.01"></label>
-                    <label class="entry-editor__field"><span>Type</span>
-                        <select id="edit-type">
-                            <option value="income">Income</option>
-                            <option value="savings">Savings</option>
-                            <option value="expenses">Expenses</option>
-                            <option value="potential">Potential</option>
-                        </select>
-                    </label>
-                    <label class="entry-editor__field"><span>Category</span><select id="edit-category"></select></label>
-                    <label class="entry-editor__field" id="edit-currency-field"><span>Currency</span><select id="edit-currency"></select></label>
-                    <label class="entry-editor__field" id="edit-holding-field"><span>Holding</span><select id="edit-holding"></select></label>
-                    <label class="entry-editor__field entry-editor__field--full"><span>Note</span><input type="text" id="edit-note" placeholder="Note (optional)"></label>
-                </div>
-                <div class="entry-editor__actions">
-                    <button class="btn-secondary" id="edit-cancel">Cancel</button>
-                    <button class="btn-apply" id="edit-save">Save</button>
-                </div>
-            </div>`;
-        document.body.appendChild(wrap);
-
-        editorEls = {
-            backdrop:      wrap.querySelector('#entry-editor-backdrop'),
-            modal:         wrap.querySelector('#entry-editor'),
-            date:          wrap.querySelector('#edit-date'),
-            amount:        wrap.querySelector('#edit-amount'),
-            type:          wrap.querySelector('#edit-type'),
-            category:      wrap.querySelector('#edit-category'),
-            currency:      wrap.querySelector('#edit-currency'),
-            holding:       wrap.querySelector('#edit-holding'),
-            currencyField: wrap.querySelector('#edit-currency-field'),
-            holdingField:  wrap.querySelector('#edit-holding-field'),
-            note:          wrap.querySelector('#edit-note'),
-            save:          wrap.querySelector('#edit-save'),
-            cancel:        wrap.querySelector('#edit-cancel'),
-        };
-
-        editorEls.holding.innerHTML = HOLDING_TYPES
-            .map(h => `<option value="${h.key}">${h.label}</option>`).join('');
-
-        editorEls.type.addEventListener('change', () => {
-            populateEditCategories();
-            updateEditCurrencyHolding();
-        });
-        editorEls.category.addEventListener('change', updateEditCurrencyHolding);
-        editorEls.cancel.addEventListener('click', closeEditor);
-        editorEls.backdrop.addEventListener('click', closeEditor);
-        editorEls.save.addEventListener('click', saveEditor);
-    }
-
-    // Options mirror the New Entry form, minus Starting Funds when it is locked
-    // (unless this very entry is the Starting Funds record).
-    function populateEditCategories(selected) {
-        editorEls.category.innerHTML = '';
-        categories[editorEls.type.value].forEach(cat => {
-            const value = cat.toLowerCase().replace(/ /g, '_');
-            if (value === 'starting_funds' && startingFundsLocked && selected !== 'starting_funds') return;
-            const opt = document.createElement('option');
-            opt.value = value;
-            opt.textContent = cat;
-            editorEls.category.appendChild(opt);
-        });
-        if (selected) editorEls.category.value = selected;
-    }
-
-    function updateEditCurrencyHolding() {
-        const type     = editorEls.type.value;
-        const category = editorEls.category.value;
-        const regional = getRegionalCurrency();
-        editorEls.holdingField.style.display = type === 'savings' ? '' : 'none';
-        if (type === 'savings' && category === 'other') {
-            editorEls.currency.disabled = false;
-        } else {
-            editorEls.currency.value = regional;
-            editorEls.currency.disabled = true;
-        }
-    }
-
-    function openEntryEditor(entry) {
-        if (!editorEls) buildEditor();
-        editingEntry = entry;
-
-        editorEls.currency.innerHTML = getCurrencyConfig().list
-            .map(c => `<option value="${c.code}">${c.symbol ? c.code + ' ' + c.symbol : c.code}</option>`).join('');
-
-        editorEls.date.value   = entry.date;
-        editorEls.amount.value = entry.amount;
-        editorEls.type.value   = entry.type;
-        populateEditCategories(entry.category);
-        editorEls.holding.value = entry.holding || HOLDING_TYPES[0].key;
-        editorEls.note.value    = entry.note || '';
-        updateEditCurrencyHolding();
-        // Restore the entry's currency where the field is editable (Savings → Other).
-        editorEls.currency.value = editorEls.currency.disabled
-            ? getRegionalCurrency()
-            : (entry.currency || getRegionalCurrency());
-
-        editorEls.backdrop.classList.add('open');
-        editorEls.modal.classList.add('open');
-        document.addEventListener('keydown', escHandler);
-    }
-    window.openEntryEditor = openEntryEditor;
-
-    function closeEditor() {
-        document.removeEventListener('keydown', escHandler);
-        if (!editorEls) return;
-        editorEls.backdrop.classList.remove('open');
-        editorEls.modal.classList.remove('open');
-        editingEntry = null;
-    }
-
-    function saveEditor() {
-        if (!editingEntry) return;
-        const amount = parseFloat(editorEls.amount.value);
-        if (isNaN(amount)) { editorEls.amount.focus(); return; }
-        const type          = editorEls.type.value;
-        const category      = editorEls.category.value;
-        const categoryLabel = editorEls.category.options[editorEls.category.selectedIndex]?.text || category;
-        const note          = editorEls.note.value.trim();
-        const currency      = editorEls.currency.disabled ? getRegionalCurrency() : editorEls.currency.value;
-
-        editingEntry.date          = editorEls.date.value;
-        editingEntry.amount        = amount;
-        editingEntry.type          = type;
-        editingEntry.category      = category;
-        editingEntry.categoryLabel = categoryLabel;
-        editingEntry.currency      = currency;
-        if (type === 'savings') editingEntry.holding = editorEls.holding.value;
-        else delete editingEntry.holding;
-        if (note) editingEntry.note = note; else delete editingEntry.note;
-
-        closeEditor();
-        applyCommitted([...committed.entries]);   // recalc, persist, push, re-render
-    }
-
-    // --- Remote backup (push full snapshot on commit if connected) ---
-    function pushToGist() {
-        if (!window.GistBackup?.isConnected()) return;
-        GistBackup.backupNow()
-            .then(date => console.log('[gist] pushed at', date))
-            .catch(e => console.warn('[gist] push failed:', e.message));
-    }
+    // The entry editor (components/entry-editor) is shared across views; it
+    // mutates the given entry in place and calls this hook to let Dashboard
+    // recalc/persist/re-render in its own way (keeping `staged` untouched).
+    window.onEntryCommitted = () => applyCommitted([...committed.entries]);
 
     // --- Export ---
     btnExport.addEventListener('click', () => {
@@ -425,8 +254,10 @@ function initDashboard() {
         })
         .then(() => {
             initExpensesChart();
-            return fetch('views/dashboard/tx-history/tx-history.html');
+            loadCSS('components/entry-editor/entry-editor.css');
+            return loadScript('components/entry-editor/entry-editor.js');
         })
+        .then(() => fetch('views/dashboard/tx-history/tx-history.html'))
         .then(r => r.text())
         .then(html => {
             txSlot.innerHTML = html;

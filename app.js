@@ -174,6 +174,37 @@ function purgeLegacyTimeTracking() {
     if (removed) console.log('[migrate] purged discontinued time-tracking data');
 }
 
+// Category options per entry type — shared by the Dashboard New Entry form
+// and the entry-editor modal (components/entry-editor), so both stay in sync
+// with EXPENSE_CATEGORIES without maintaining two separate lists.
+const ENTRY_CATEGORIES = {
+    income:    ['Starting Funds', 'Salary', 'Other'],
+    savings:   ['Flow', 'Other'],
+    expenses:  [
+        ...EXPENSE_CATEGORIES.map(c => c.label),
+        'Savings',   // withdrawal from the reserve (nets down Savings, not an expense)
+    ],
+    potential: ['Income', 'Expenses'],   // partner stream, direction only; see isPotential()
+};
+
+// Recalculates totals, persists the full committed snapshot, and pushes to a
+// connected Gist. Shared by the Dashboard's Apply flow and any other view
+// that commits an edited entry (e.g. Home's embedded transaction list), so
+// the recalc/persist/sync step is defined once. Callers still own their own
+// view-specific re-render afterward — this only writes storage.
+function commitEntries(entries) {
+    const committed = recalculateTotals(entries);
+    try { localStorage.setItem('dashboard_committed', JSON.stringify(committed)); }
+    catch (e) { console.warn('Could not save:', e); }
+    window.GistBackup?.markLocalModified?.();
+    if (window.GistBackup?.isConnected()) {
+        GistBackup.backupNow()
+            .then(date => console.log('[gist] pushed at', date))
+            .catch(e => console.warn('[gist] push failed:', e.message));
+    }
+    return committed;
+}
+
 const TX_TYPE_ICONS = {
     income:    'ti-trending-up',
     savings:   'ti-coin',

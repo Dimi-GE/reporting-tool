@@ -1,20 +1,47 @@
-/* Transaction History Component */
+/* Single source of truth for the expand/collapse speed. On :root (rather
+   than .tx-container) so .tx-backdrop — a sibling, not a descendant, per the
+   HTML — inherits it too; tx-history.js also reads this same value back
+   (getComputedStyle) to time the collapse cleanup, so CSS, the backdrop, and
+   JS can never drift apart the way a duplicated CSS duration + a separate JS
+   constant did before. Change only this. */
+:root {
+    --tx-anim-duration: 0.5s;
+}
+
 .tx-container {
     position: relative;
-    transition: transform 0.4s ease, box-shadow 0.4s ease, margin 0.4s ease, margin-top 0.4s ease;
+    transition: box-shadow 0.4s ease, background-color 0.4s ease;
     border-radius: 4px;
 }
 
+/* Expanded ("Full History") state is a fixed overlay sized to match the
+   current .content-container's on-screen bounds (inset 15px each side) and
+   vertically centered — that shifts with the sidebar's collapsed state and
+   the page's own centering, neither of which a static CSS value can track,
+   so top/left/width/height are all set inline by tx-history.js instead.
+   .tx-animating adds the transition (top/left/width/height, not just the
+   colour/shadow fade) — kept as a separate class so the very first "snap to
+   the collapsed card's exact spot" step (the start of the FLIP animation
+   tx-history.js runs) can happen with no transition active, before the
+   target rect is applied and this class turns the move into a glide.
+   The previous approach grew the container in place via a hard-coded
+   negative margin, which only looked right at one scroll position. */
 .tx-container.expanded {
-    transform: translateX(-8px) scaleX(1.008);
-    margin-top: -400px;
-    margin-bottom: 0;
-    box-shadow: 0 -4px 40px rgba(0, 0, 0, 0.6);
+    position: fixed;
     z-index: 100;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 60px rgba(0, 0, 0, 0.6);
     background-color: rgba(19, 19, 26, 1);
-    
     border: 1px solid var(--card-border);
-    border-radius: 4px;
+    border-radius: 8px;
+}
+
+.tx-container.tx-animating {
+    transition: top var(--tx-anim-duration) ease, left var(--tx-anim-duration) ease,
+                width var(--tx-anim-duration) ease, height var(--tx-anim-duration) ease,
+                box-shadow var(--tx-anim-duration) ease, background-color var(--tx-anim-duration) ease,
+                border-radius var(--tx-anim-duration) ease;
 }
 
 .tx-header {
@@ -23,6 +50,7 @@
     justify-content: space-between;
     gap: 12px;
     margin: 8px;
+    flex-shrink: 0;
 }
 
 .tx-filters {
@@ -74,26 +102,37 @@
     transition: max-height 0.2s ease, border-color 0.4s ease, background-color 0.4s ease;
 }
 
-/* Expanded state — grows upward by increasing max-height */
+/* Expanded state — fills the remaining height of the fixed overlay box
+   (.tx-container.expanded is a flex column; the header takes its own
+   height, this takes the rest) instead of a viewport-fraction max-height. */
 .tx-list.expanded {
-    max-height: 60vh;
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    margin: 0 8px 8px;
     border-color: #2e2e3e;
     background-color: rgba(19, 19, 26, 1);
 }
 
-/* Backdrop */
+/* Backdrop — always rendered (not display:none/block) so its opacity can
+   fade in step with the expand/collapse (--tx-anim-duration) instead of
+   popping instantly. */
 .tx-backdrop {
-    display: none;
     position: fixed;
     inset: 0;
     z-index: 99;
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     background-color: rgba(0, 0, 0, 0.25);
-    transition: opacity 0.3s ease;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--tx-anim-duration) ease;
 }
 
-.tx-backdrop.active { display: block; }
+.tx-backdrop.active {
+    opacity: 1;
+    pointer-events: auto;
+}
 
 /* Transaction items */
 .tx-item {

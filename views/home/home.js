@@ -27,9 +27,7 @@ function initHome() {
         });
     }
 
-    // --- Resolve reference month ---
-    // Use the current month if it has income; otherwise fall back to the most
-    // recent past month that does. Health ratios require income to be meaningful.
+    // --- Current month bounds/aggregation helpers ---
     function getMonthBounds(year, month) {
         const start = `${year}-${String(month + 1).padStart(2, '0')}-01`;
         const last  = new Date(year, month + 1, 0).getDate();
@@ -56,26 +54,13 @@ function initHome() {
         return { entries: me, income, expenses, savings, savingsFlow, rent };
     }
 
+    // Always the true current calendar month — no fallback to a past month,
+    // even if it has no income recorded yet. Monthly Income/Expenses, Runway,
+    // and Financial Health all read this directly.
     const now = new Date();
-    let refYear = now.getFullYear();
-    let refMonth = now.getMonth();
-    let ref = sumMonth(...Object.values(getMonthBounds(refYear, refMonth)));
-
-    if (ref.income === 0) {
-        // Walk back up to 12 months to find one with income
-        for (let i = 1; i <= 12; i++) {
-            let m = now.getMonth() - i;
-            let y = now.getFullYear() + Math.floor(m / 12);
-            m = ((m % 12) + 12) % 12;
-            const candidate = sumMonth(...Object.values(getMonthBounds(y, m)));
-            if (candidate.income > 0) {
-                ref = candidate;
-                refYear = y;
-                refMonth = m;
-                break;
-            }
-        }
-    }
+    const refYear = now.getFullYear();
+    const refMonth = now.getMonth();
+    const ref = sumMonth(...Object.values(getMonthBounds(refYear, refMonth)));
 
     const { start: monthStart, end: monthEnd } = getMonthBounds(refYear, refMonth);
     const periodLabel = new Date(refYear, refMonth, 1)
@@ -102,58 +87,37 @@ function initHome() {
     const potential = totals.potential;
 
     // --- KPI Cards ---
-    const totalSavedEl = document.getElementById('home-total-saved');
-    totalSavedEl.textContent = '≈ ' + totalSaved.toFixed(2);
-    totalSavedEl.title = 'Approximate total in ' + getRegionalCurrency();
-    document.getElementById('home-monthly-income').textContent   = monthIncome.toFixed(2);
-    document.getElementById('home-monthly-expenses').textContent = monthExpenses.toFixed(2);
+    // Runway: this month's income vs expenses only — the in-month drift in
+    // funds. Deliberately ignores Starting Funds and all prior months, so it
+    // reads independently of Available (the all-time balance beside it).
+    const runway = monthIncome - monthExpenses;
+    document.getElementById('home-runway-income').textContent   = monthIncome.toFixed(2);
+    document.getElementById('home-runway-expenses').textContent = monthExpenses.toFixed(2);
+    const runwayEl = document.getElementById('home-runway');
+    runwayEl.textContent = runway.toFixed(2);
+    runwayEl.classList.toggle('home-card__value--negative', runway < 0);
 
+    // Available and Potential are the two stacked components; Together
+    // (Available + potential) is the card's headline result, on the right —
+    // always shown (zero Potential when no Potential entries exist) so both
+    // KPI cards keep the same fixed layout.
     const availEl = document.getElementById('home-available');
     availEl.textContent = available.toFixed(2);
-    availEl.classList.toggle('home-card__value--negative', available < 0);
+    availEl.classList.toggle('home-card__stack-value--negative', available < 0);
 
-    // Partner "Potential" sub-value. Only shown once any Potential entry exists,
-    // so the solo-user layout is unchanged. "together" is the combined pool.
-    const potentialBlock = document.getElementById('home-potential-block');
-    const hasPotential = entries.some(isPotential);
-    potentialBlock.hidden = !hasPotential;
-    if (hasPotential) {
-        const together = available + potential;
-        const potEl = document.getElementById('home-potential');
-        potEl.textContent = (potential >= 0 ? '+ ' : '− ') + Math.abs(potential).toFixed(2);
-        potEl.classList.toggle('home-card__sub--negative', potential < 0);
-        const togEl = document.getElementById('home-together');
-        togEl.textContent = together.toFixed(2);
-        togEl.classList.toggle('home-card__together--negative', together < 0);
-    }
+    const together = available + potential;
+    const potEl = document.getElementById('home-potential');
+    potEl.textContent = (potential >= 0 ? '+ ' : '− ') + Math.abs(potential).toFixed(2);
+    potEl.classList.toggle('home-card__stack-value--negative', potential < 0);
+    const togEl = document.getElementById('home-together');
+    togEl.textContent = together.toFixed(2);
+    togEl.classList.toggle('home-card__value--negative', together < 0);
 
     // --- Recent Transactions ---
-    const txList = document.getElementById('home-tx-list');
-    // Newest first. Entries are day-level only, so ties on date fall back to
-    // insertion order reversed (the most recently committed entry wins), which
-    // is what "most recent" means when several share a date.
-    const recent = entries
-        .map((e, i) => [e, i])
-        .sort((a, b) => b[0].date.localeCompare(a[0].date) || b[1] - a[1])
-        .slice(0, 5)
-        .map(([e]) => e);
-
-    if (recent.length === 0) {
-        txList.innerHTML = '<div class="home-no-data">No transactions yet</div>';
-    } else {
-        txList.innerHTML = recent.map(e => {
-            // Potential rows carry their own direction in the category, so sign by
-            // that; income/savings are inflows, everything else is an outflow.
-            let sign;
-            if (isPotential(e)) sign = e.category === 'expenses' ? '-' : '+';
-            else sign = e.type === 'income' ? '+' : e.type === 'savings' ? '~' : '-';
-            return `<div class="home-tx-item">
-                <span class="home-tx-date">${e.date}</span>
-                <span class="home-tx-cat">${e.categoryLabel}${isPotential(e) ? ' <span class="home-tx-tag">potential</span>' : ''}</span>
-                <span class="home-tx-amount home-tx-amount--${e.type}">${sign}${e.amount.toFixed(2)}</span>
-            </div>`;
-        }).join('');
-    }
+    // Full tx-history component (shared with Dashboard) fitted into this
+    // panel via .home-tx-embed (home.css) — same filters, Full History
+    // overlay, and per-entry edit button as the Dashboard.
+    const txHistoryReady = renderHomeTxHistory(entries);
 
     // --- Financial Health bars ---
     function setBar(fillId, valId, ratio, threshold, higherIsGood) {
@@ -186,22 +150,70 @@ function initHome() {
 
     // --- Savings Holdings sheet ---
     // Gross savings deposits grouped by currency + holding type (visual only,
-    // no conversion). Withdrawals (reserve drawdowns) are not netted here.
-    renderHomeHoldings(entries);
+    // no conversion). Withdrawals (reserve drawdowns) are not netted here. The
+    // bottom-line total is the net, regional-converted figure that used to be
+    // the standalone "Total Saved" KPI card.
+    renderHomeHoldings(entries, totalSaved);
 
     // --- Charts ---
     if (homeDonutChart) { homeDonutChart.destroy(); homeDonutChart = null; }
 
-    loadScript('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js')
+    const donutReady = loadScript('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js')
+        .then(() => { homeDonutChart = renderHomeDonut(monthEntries, EXPENSE_CATS); });
+
+    Promise.all([donutReady, txHistoryReady]).then(() => window.viewReady?.());
+}
+
+// Embeds the Dashboard's own tx-history component (filters, Full History
+// overlay, edit-pencil modal) into this panel, sized down via .home-tx-embed
+// (home.css) instead of a separate read-only 5-item list. Loaded on demand,
+// same as Dashboard does for its own copy — reusing the identical HTML/CSS/JS
+// keeps behaviour in one place; only the surrounding CSS differs per view.
+function renderHomeTxHistory(entries) {
+    const slot = document.getElementById('home-tx-history-slot');
+    if (!slot) return Promise.resolve();
+
+    // The shared entry-editor modal mutates the edited entry in place, then
+    // calls this hook so Home can recalc/persist/re-render exactly as it
+    // would on a fresh load. Reassigned every call so it always closes over
+    // the current `entries` array.
+    window.onEntryCommitted = () => { commitEntries(entries); initHome(); };
+
+    if (slot.dataset.loaded) {
+        // Already embedded earlier during this Home visit (e.g. re-rendering
+        // after an edit) — just refresh the rows, which preserves the Full
+        // History expand/collapse state instead of resetting it.
+        renderTxList(entries);
+        return Promise.resolve();
+    }
+
+    return loadScript('components/entry-editor/entry-editor.js')
         .then(() => {
-            homeDonutChart = renderHomeDonut(monthEntries, EXPENSE_CATS);
-            window.viewReady?.();
+            loadCSS('components/entry-editor/entry-editor.css');
+            return fetch('views/dashboard/tx-history/tx-history.html');
+        })
+        .then(r => r.text())
+        .then(html => {
+            slot.innerHTML = html;
+            loadCSS('views/dashboard/tx-history/tx-history.css');
+            return loadScript('views/dashboard/tx-history/tx-history.js');
+        })
+        .then(() => {
+            initTxHistory();
+            renderTxList(entries);
+            slot.dataset.loaded = 'true';
         });
 }
 
-function renderHomeHoldings(entries) {
+function renderHomeHoldings(entries, totalSaved) {
     const el = document.getElementById('home-holdings');
     if (!el) return;
+
+    const totalEl = document.getElementById('home-holdings-total');
+    if (totalEl) {
+        totalEl.textContent = '≈ ' + totalSaved.toFixed(2);
+        totalEl.title = 'Approximate total in ' + getRegionalCurrency();
+    }
 
     const regional = getRegionalCurrency();
     const groups = {};
