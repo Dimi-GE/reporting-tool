@@ -76,10 +76,11 @@
             </div>
         </div>
 
-        <div class="home-panel">
+        <div class="home-panel" id="home-expenses-panel">
             <div class="home-panel__header">
                 <i class="ti ti-chart-donut"></i>
                 <span>Expense Breakdown</span>
+                <span class="home-expenses-toggle" id="home-expenses-toggle">Expand</span>
             </div>
             <div class="home-panel__body home-panel__body--center">
                 <div class="home-donut-wrap">
@@ -87,6 +88,14 @@
                 </div>
             </div>
         </div>
+
+        <!-- Expanded Expense Breakdown — the full Dashboard expenses-chart
+             component, injected by home.js, pulled out into a fixed overlay
+             sized like Recent Transactions' Full History overlay (same
+             .content-container bounds). The donut panel above is never
+             hidden or altered by expand/collapse. -->
+        <div class="home-expenses-overlay" id="home-expenses-overlay"></div>
+        <div class="home-expenses-backdrop" id="home-expenses-backdrop"></div>
 
         <div class="home-panel">
             <div class="home-panel__header">

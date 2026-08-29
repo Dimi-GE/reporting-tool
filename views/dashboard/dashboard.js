@@ -60,7 +60,6 @@ function initDashboard() {
                 renderTxList(committed.entries);
             }
         } catch(e) { console.warn('Could not load:', e); }
-        renderExpensesChart(committed.entries);
     }
 
     // --- Categories ---
@@ -199,9 +198,7 @@ function initDashboard() {
         startingFundsLocked = committed.entries.some(e => e.category === 'starting_funds');
         populateCategories();
         renderTxList(committed.entries);
-        renderExpensesChart(committed.entries);
     }
-    window.applyPeriodImport = applyCommitted;
 
     // The entry editor (components/entry-editor) is shared across views; it
     // mutates the given entry in place and calls this hook to let Dashboard
@@ -238,25 +235,11 @@ function initDashboard() {
 
     function capitalize(str) { return str.charAt(0).toUpperCase() + str.slice(1); }
 
-    // --- Load Chart.js then components ---
-    const chartSlot = document.getElementById('expenses-chart-slot');
-    const txSlot    = document.getElementById('tx-history-slot');
+    // --- Load components ---
+    const txSlot = document.getElementById('tx-history-slot');
 
-    loadScript('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js')
-        .then(() => loadScript('engine/periods.js'))
-        .then(() => loadScript('engine/calculator.js'))
-        .then(() => fetch('views/dashboard/expenses-chart/expenses-chart.html'))
-        .then(r => r.text())
-        .then(html => {
-            chartSlot.innerHTML = html;
-            loadCSS('views/dashboard/expenses-chart/expenses-chart.css');
-            return loadScript('views/dashboard/expenses-chart/expenses-chart.js');
-        })
-        .then(() => {
-            initExpensesChart();
-            loadCSS('components/entry-editor/entry-editor.css');
-            return loadScript('components/entry-editor/entry-editor.js');
-        })
+    loadCSS('components/entry-editor/entry-editor.css');
+    loadScript('components/entry-editor/entry-editor.js')
         .then(() => fetch('views/dashboard/tx-history/tx-history.html'))
         .then(r => r.text())
         .then(html => {

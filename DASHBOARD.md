@@ -49,23 +49,9 @@ Entries added via the form go into a staging area before they are committed. Thi
 
 Each staged entry shows date, amount, type, and category. Individual entries can be deleted from staging before committing. The **Apply** button commits all staged entries at once and updates every view in the app immediately. Until Apply is pressed, all analytics remain unchanged.
 
-The Dashboard no longer carries an Overview card row — the at-a-glance totals live on the **Home** view (**Runway**, this month's Income − Expenses; and **Together**, built on Available — the all-time spendable balance that was previously the Dashboard's "Flow" card; see HOME.md). The Dashboard is focused on entry, the expense breakdown, and the transaction record.
+The Dashboard no longer carries an Overview card row — the at-a-glance totals live on the **Home** view (**Runway**, this month's Income − Expenses; and **Together**, built on Available — the all-time spendable balance that was previously the Dashboard's "Flow" card; see HOME.md). The Dashboard is focused on entry and the transaction record.
 
----
-
-### Expenses by Category
-
-A bar chart breaking down spending across all 12 expense categories for a selected time period. Categories are sorted descending by spend — the highest category always appears first, so the most impactful expenses are immediately visible without scanning.
-
-Each bar is colour-coded and topped with the category icon rendered directly onto the chart canvas. Zero-spend categories are still shown at zero height, keeping the layout consistent regardless of which categories are active in a given period.
-
-**Period picker** — two date inputs (start and end) that default to the current calendar month. Changing either date instantly re-renders the chart. The period selection is also used by the period-level export and import controls.
-
-**Legend** — a toggleable panel listing all 12 categories with their icon and colour. Useful for reference when the chart bars are too narrow to read the icons clearly.
-
-**Period file operations** — a secondary file panel (separate from the global backup) scoped to the selected period:
-- *Export period* — saves only the entries within the selected date range as a `.json` file, with the period dates included in the filename automatically.
-- *Import period* — imports a period file and merges it into the existing dataset. Entries within the period are replaced; entries outside the period are untouched. This allows updating a specific month without disturbing the rest of the history.
+The Expenses by Category chart (period picker, legend, per-category bars, period export/import) has likewise moved off the Dashboard — it now lives inside the Home **Expense Breakdown** panel's expanded state (see HOME.md).
 
 ---
 

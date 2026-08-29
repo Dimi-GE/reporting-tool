@@ -158,10 +158,13 @@ function initHome() {
     // --- Charts ---
     if (homeDonutChart) { homeDonutChart.destroy(); homeDonutChart = null; }
 
-    const donutReady = loadScript('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js')
-        .then(() => { homeDonutChart = renderHomeDonut(monthEntries, EXPENSE_CATS); });
+    const chartsReady = loadScript('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js')
+        .then(() => {
+            homeDonutChart = renderHomeDonut(monthEntries, EXPENSE_CATS);
+            return setupExpenseBreakdown(entries);
+        });
 
-    Promise.all([donutReady, txHistoryReady]).then(() => window.viewReady?.());
+    Promise.all([chartsReady, txHistoryReady]).then(() => window.viewReady?.());
 }
 
 // Embeds the Dashboard's own tx-history component (filters, Full History
@@ -256,6 +259,132 @@ function renderHomeHoldings(entries, totalSaved) {
                 }).join('')}
             </tbody>
         </table>`;
+}
+
+// Wires the Expense Breakdown panel's Expand toggle. The donut panel itself
+// is never touched — Expand instead pulls the Dashboard's own
+// expenses-chart component (period picker, legend, period file ops) out into
+// a fixed overlay, following the exact same principle as Recent
+// Transactions' "Full History" overlay (tx-history.js): a FLIP animation
+// that grows a fixed-position element from a start rect to a target rect
+// sized like .content-container, plus a backdrop. The one difference is the
+// start rect — tx-history animates its own already-visible compact list,
+// but this overlay has no compact on-page form of its own, so it grows from
+// the Expense Breakdown card's rect instead, which reads as "pulling the
+// window out of this card" while leaving the donut inside undisturbed.
+function setupExpenseBreakdown(entries) {
+    const panel    = document.getElementById('home-expenses-panel');
+    const toggle   = document.getElementById('home-expenses-toggle');
+    const overlay  = document.getElementById('home-expenses-overlay');
+    const backdrop = document.getElementById('home-expenses-backdrop');
+    if (!panel || !toggle || !overlay || !backdrop) return Promise.resolve();
+
+    // The chart's period-import feature (like tx-history's editor) needs a
+    // hook to commit the merged entries and refresh the whole view.
+    window.applyPeriodImport = (updatedEntries) => { commitEntries(updatedEntries); initHome(); };
+
+    let animToken = 0;
+
+    function getAnimMs() {
+        const raw = getComputedStyle(document.documentElement)
+            .getPropertyValue('--home-expand-anim-duration').trim();
+        const value = parseFloat(raw);
+        if (!value) return 500;
+        return raw.endsWith('ms') ? value : value * 1000;
+    }
+
+    // Same target rect Full History uses: the current .content-container
+    // bounds (inset 15px each side), vertically centered in the viewport.
+    function computeExpandedRect() {
+        const content = document.querySelector('.content-container');
+        const inset = 15;
+        const contentRect = content
+            ? content.getBoundingClientRect()
+            : { left: inset, width: window.innerWidth - inset * 2 };
+        const height = Math.min(640, window.innerHeight - 96);
+        return {
+            top:    (window.innerHeight - height) / 2,
+            left:   contentRect.left + inset,
+            width:  contentRect.width - inset * 2,
+            height,
+        };
+    }
+
+    function applyRect(rect) {
+        overlay.style.top    = rect.top + 'px';
+        overlay.style.left   = rect.left + 'px';
+        overlay.style.width  = rect.width + 'px';
+        overlay.style.height = rect.height + 'px';
+    }
+
+    function positionOverlay() {
+        if (!overlay.classList.contains('expanded')) return;
+        applyRect(computeExpandedRect());
+    }
+
+    function ensureChartLoaded() {
+        if (overlay.dataset.loaded) return Promise.resolve();
+        return loadScript('engine/periods.js')
+            .then(() => fetch('views/dashboard/expenses-chart/expenses-chart.html'))
+            .then(r => r.text())
+            .then(html => {
+                overlay.innerHTML = html;
+                loadCSS('views/dashboard/expenses-chart/expenses-chart.css');
+                return loadScript('views/dashboard/expenses-chart/expenses-chart.js');
+            })
+            .then(() => {
+                initExpensesChart();
+                overlay.dataset.loaded = 'true';
+            });
+    }
+
+    function expand() {
+        animToken++;
+        const startRect = panel.getBoundingClientRect();
+
+        return ensureChartLoaded().then(() => {
+            renderExpensesChart(entries);
+
+            overlay.classList.add('expanded');
+            backdrop.classList.add('active');
+            toggle.textContent = 'Collapse';
+
+            applyRect(startRect);
+            void overlay.offsetHeight;   // force reflow before enabling the transition
+            overlay.classList.add('home-expenses-anim');
+            applyRect(computeExpandedRect());
+
+            window.addEventListener('resize', positionOverlay);
+        });
+    }
+
+    function collapse() {
+        const myToken = ++animToken;
+        window.removeEventListener('resize', positionOverlay);
+
+        backdrop.classList.remove('active');
+        toggle.textContent = 'Expand';
+        applyRect(panel.getBoundingClientRect());
+
+        setTimeout(() => {
+            if (myToken !== animToken) return;   // a new expand()/collapse() has since started
+            overlay.classList.remove('expanded', 'home-expenses-anim');
+            overlay.style.top = overlay.style.left = overlay.style.width = overlay.style.height = '';
+        }, getAnimMs());
+    }
+
+    toggle.onclick = () => {
+        overlay.classList.contains('expanded') ? collapse() : expand();
+    };
+    backdrop.onclick = collapse;
+
+    // If Home is re-rendering in place (e.g. after committing an edited
+    // entry) while the overlay is already open, just refresh its data —
+    // don't replay the open animation.
+    if (overlay.classList.contains('expanded')) {
+        return ensureChartLoaded().then(() => renderExpensesChart(entries));
+    }
+    return Promise.resolve();
 }
 
 function renderHomeDonut(monthEntries, EXPENSE_CATS) {

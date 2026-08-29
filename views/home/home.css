@@ -289,6 +289,91 @@
     position: relative;
 }
 
+/* Expense Breakdown: Expand pulls the full Dashboard chart out into a fixed
+   overlay, the same "grow from its card to fill .content-container" pattern
+   Recent Transactions' Full History overlay uses (see tx-history.css) — its
+   own animation-duration variable, so it never drifts if that one changes.
+   The donut panel itself is untouched by expand/collapse; this overlay is a
+   separate element entirely. Styled standalone (not relying on
+   expenses-chart.css's .link-text) since that stylesheet isn't loaded until
+   first expanded. */
+:root {
+    --home-expand-anim-duration: 0.5s;
+}
+
+.home-expenses-toggle {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-decoration: underline;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.2s;
+}
+
+.home-expenses-toggle:hover {
+    color: var(--text-primary);
+}
+
+.home-expenses-overlay {
+    position: fixed;
+    z-index: 100;
+    display: none;
+    flex-direction: column;
+    overflow: auto;
+    padding: 16px;
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 10px 60px rgba(0, 0, 0, 0.6);
+}
+
+.home-expenses-overlay.expanded {
+    display: flex;
+}
+
+/* Added only once the start rect has been applied with no transition (a FLIP
+   "snap" frame), so the very first paint doesn't itself animate — see
+   setupExpenseBreakdown() in home.js. */
+.home-expenses-overlay.home-expenses-anim {
+    transition: top var(--home-expand-anim-duration) ease, left var(--home-expand-anim-duration) ease,
+                width var(--home-expand-anim-duration) ease, height var(--home-expand-anim-duration) ease;
+}
+
+.home-expenses-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    background-color: rgba(0, 0, 0, 0.25);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--home-expand-anim-duration) ease;
+}
+
+.home-expenses-backdrop.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* expenses-chart.css fixes .chart-wrap at a 220px height (right for
+   Dashboard's page-flow layout) — inside this fixed-height overlay it
+   should fill whatever space is left under the header/legend instead, the
+   same way tx-list.expanded fills the rest of the Full History overlay.
+   Chart.js (responsive: true) tracks the resulting size via its own
+   ResizeObserver, so the canvas keeps up automatically. */
+.home-expenses-overlay .chart-container {
+    flex: 1;
+    min-height: 0;
+}
+
+.home-expenses-overlay .chart-wrap {
+    flex: 1;
+    min-height: 0;
+    height: auto;
+}
+
 /* Financial health bars */
 .health-bar-item {
     display: flex;
