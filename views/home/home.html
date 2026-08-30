@@ -16,7 +16,7 @@
         <div class="home-panel" id="home-balance-card">
             <div class="home-panel__header">
                 <i class="ti ti-cash"></i>
-                <span>Balance</span>
+                <span>Current Balance</span>
                 <span class="home-link-toggle" id="home-balance-toggle">Details</span>
             </div>
             <div class="home-panel__body home-panel__body--split">
@@ -36,13 +36,20 @@
             </div>
         </div>
 
-        <!-- Quick add: three shortcuts that open the same entry-editor modal
-             used for editing transactions, pre-filled with a sensible
-             category for that type (see setupQuickAdd()/quickAddEntry() in
-             home.js). Built in JS off TX_TYPE_ICONS/TX_TYPE_COLORS (app.js)
-             so the icon/colour never drifts from Recent Transactions' own
-             type badges. -->
-        <div class="home-card home-card--quick-add" id="home-quick-add"></div>
+        <!-- New Entry: three quick-add shortcuts that open the same
+             entry-editor modal used for editing transactions, pre-filled
+             with a sensible category for that type (see
+             setupQuickAdd()/quickAddEntry() in home.js). The buttons are
+             built in JS off TX_TYPE_ICONS/TX_TYPE_COLORS (app.js) so the
+             icon/colour never drifts from Recent Transactions' own type
+             badges. -->
+        <div class="home-panel">
+            <div class="home-panel__header">
+                <i class="ti ti-square-rounded-plus"></i>
+                <span>New Entry</span>
+            </div>
+            <div class="home-quick-add-body" id="home-quick-add"></div>
+        </div>
     </div>
 
     <!-- Balance details overlay: the same Available/Potential/Balance
@@ -54,7 +61,7 @@
     <div class="home-balance-overlay" id="home-balance-overlay">
         <div class="home-balance-overlay__header">
             <i class="ti ti-cash"></i>
-            <span>Balance</span>
+            <span>Current Balance</span>
         </div>
         <div class="home-card__details-row">
             <span class="home-card__stack-label">Available</span>

@@ -216,14 +216,14 @@
     font-size: 15px;
 }
 
-/* Quick add: three equal buttons filling the card, each opening the
-   entry-editor modal in "add" mode (setupQuickAdd()/quickAddEntry() in
-   home.js) pre-filled for that type. */
-.home-card--quick-add {
+/* New Entry panel body: three equal buttons filling the panel below its
+   header, each opening the entry-editor modal in "add" mode
+   (setupQuickAdd()/quickAddEntry() in home.js) pre-filled for that type.
+   No padding of its own (like .home-panel__body--flush) — the buttons sit
+   flush against the panel's edges and clip to its rounded corners via the
+   base .home-panel rule's overflow:hidden. */
+.home-quick-add-body {
     display: flex;
-    padding: 0;
-    gap: 0;
-    overflow: hidden;
 }
 
 .home-quick-add-btn {
