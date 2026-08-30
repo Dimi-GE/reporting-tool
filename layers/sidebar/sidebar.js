@@ -1,6 +1,11 @@
 const NAV_ITEMS = [
     { icon: 'ti-home',              label: 'Home',          view: 'home' },
-    { icon: 'ti-layout-dashboard',  label: 'Dashboard',     view: 'dashboard' },
+    // Dashboard is being phased out in favour of Home (Balance/New Entry now
+    // cover entry creation, Recent Transactions and Expense Breakdown are
+    // embedded there too) — hidden from nav, not deleted, while that move
+    // finishes. loadView('dashboard') and the view files still work if
+    // needed; see the matching session-restore guard in app.js.
+    { icon: 'ti-layout-dashboard',  label: 'Dashboard',     view: 'dashboard', hidden: true },
     { icon: 'ti-receipt',           label: 'Transactions',  view: null, hidden: true },
     { icon: 'ti-chart-bar',         label: 'Analytics',     view: 'behavior-analytics' },
     { icon: 'ti-map-2',             label: 'Roadmap',       view: 'roadmap' },

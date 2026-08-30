@@ -335,10 +335,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     migrateCategories();
     purgeLegacyTimeTracking();
 
-    // Guard against a stale sessionStorage pointing at a view that no longer
-    // exists (e.g. the removed time-tracking view) — fall back to Home so a
-    // restore can never 404 into the error state.
-    const REMOVED_VIEWS = ['time-tracking'];
+    // Guard against a stale sessionStorage pointing at a view with no nav
+    // entry to get back to it — either removed outright (time-tracking) or
+    // hidden pending retirement (dashboard, see sidebar.js) — so a restore
+    // can never land somewhere the sidebar can't navigate away from.
+    const HIDDEN_VIEWS = ['time-tracking', 'dashboard'];
     const saved = sessionStorage.getItem('activeView');
-    loadView(saved && !REMOVED_VIEWS.includes(saved) ? saved : 'home');
+    loadView(saved && !HIDDEN_VIEWS.includes(saved) ? saved : 'home');
 });

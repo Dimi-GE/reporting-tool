@@ -114,16 +114,24 @@
    mechanic as .home-expenses-overlay/.home-expenses-backdrop (see
    setupBalanceDetails() in home.js), just at a smaller, content-sized
    footprint centered within .content-container instead of filling it —
-   there's no chart here, just a handful of value rows. overflow:hidden
-   clips the content during the collapse animation, when the box has
-   shrunk back toward the panel's own (much smaller) rect. */
+   there's no chart here, just a handful of value rows.
+   overflow-x:hidden clips content horizontally during the collapse
+   animation, when the box has shrunk back toward the panel's own (much
+   smaller) rect. overflow-y:auto is the fallback for short viewports (mobile
+   landscape) where the computed height (setupBalanceDetails() in home.js)
+   can't fit the full breakdown + Runway — scroll instead of silently
+   clipping it. justify-content is flex-start (not center) so that overflow
+   is reachable by scrolling from the top rather than getting clipped on both
+   ends, a known quirk of centering overflowing flex content. */
 .home-balance-overlay {
     position: fixed;
     z-index: 100;
     display: none;
     flex-direction: column;
-    justify-content: center;
-    overflow: hidden;
+    justify-content: flex-start;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     padding: 16px 20px;
     background-color: var(--surface);
     border: 1px solid var(--border);
@@ -440,6 +448,7 @@
     display: none;
     flex-direction: column;
     overflow: auto;
+    -webkit-overflow-scrolling: touch;
     padding: 16px;
     background-color: var(--surface);
     border: 1px solid var(--border);
@@ -481,15 +490,21 @@
    should fill whatever space is left under the header/legend instead, the
    same way tx-list.expanded fills the rest of the Full History overlay.
    Chart.js (responsive: true) tracks the resulting size via its own
-   ResizeObserver, so the canvas keeps up automatically. */
+   ResizeObserver, so the canvas keeps up automatically.
+   min-height:160px is a floor, not just flex:1's usual min-height:0 — on a
+   short viewport (mobile landscape) the header + always-visible legend can
+   eat the overlay's entire capped height, and min-height:0 let the chart get
+   squeezed down to an unusably thin (or literally 0px, invisible) sliver
+   instead. With a real floor, the overlay's own overflow:auto (below) kicks
+   in and the excess scrolls instead. */
 .home-expenses-overlay .chart-container {
     flex: 1;
-    min-height: 0;
+    min-height: 160px;
 }
 
 .home-expenses-overlay .chart-wrap {
     flex: 1;
-    min-height: 0;
+    min-height: 160px;
     height: auto;
 }
 
