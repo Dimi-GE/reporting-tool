@@ -16,11 +16,12 @@
                 </div>
                 <button id="btn-period-file-toggle" class="btn-period-file-toggle" title="Period import/export"><i class="ti ti-file-export"></i></button>
             </div>
-            <span class="link-text" id="btn-legend-toggle">Legend</span>
         </div>
     </div>
 
-    <!-- Legend panel -->
+    <!-- Legend panel: always visible, this component only ever renders inside
+         Home's expanded overlay (see home.js), so there's no compact state to
+         collapse back into. -->
     <div class="legend-panel" id="legend-panel">
         <div class="legend-grid" id="legend-grid"></div>
     </div>

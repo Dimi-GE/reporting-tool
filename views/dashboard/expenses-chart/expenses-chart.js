@@ -4,8 +4,6 @@ let expensesChartInstance = null;
 let currentEntries = [];
 
 function initExpensesChart() {
-    const btnLegend   = document.getElementById('btn-legend-toggle');
-    const legendPanel = document.getElementById('legend-panel');
     const legendGrid  = document.getElementById('legend-grid');
     const periodStart = document.getElementById('period-start');
     const periodEnd   = document.getElementById('period-end');
@@ -93,23 +91,6 @@ function initExpensesChart() {
             <span>${cat.label}</span>
         `;
         legendGrid.appendChild(item);
-    });
-
-    // --- Legend toggle ---
-    let legendOpen = false;
-    function setLegendOpen(open) {
-        legendOpen = open;
-        legendPanel.style.maxHeight = open ? legendPanel.scrollHeight + 'px' : '0px';
-        legendPanel.classList.toggle('open', open);
-        btnLegend.textContent = open ? 'Close' : 'Legend';
-    }
-
-    btnLegend.addEventListener('click', () => setLegendOpen(!legendOpen));
-
-    document.addEventListener('click', (e) => {
-        if (legendOpen && !legendPanel.contains(e.target) && e.target !== btnLegend) {
-            setLegendOpen(false);
-        }
     });
 }
 

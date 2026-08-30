@@ -1,2 +1,2 @@
 # Personal Dashboard
-v0.0.2b.1 — July 2026
+v0.0.2b.5 — August 2026
