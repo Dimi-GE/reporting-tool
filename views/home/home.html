@@ -36,12 +36,13 @@
             </div>
         </div>
 
-        <!-- Placeholder for the upcoming quick-add shortcuts (Income/Expense/
-             Savings), which will open the same entry-editor modal used for
-             editing transactions. -->
-        <div class="home-card home-card--placeholder">
-            <span class="home-card__placeholder-text"><i class="ti ti-square-rounded-plus"></i> Quick add — coming soon</span>
-        </div>
+        <!-- Quick add: three shortcuts that open the same entry-editor modal
+             used for editing transactions, pre-filled with a sensible
+             category for that type (see setupQuickAdd()/quickAddEntry() in
+             home.js). Built in JS off TX_TYPE_ICONS/TX_TYPE_COLORS (app.js)
+             so the icon/colour never drifts from Recent Transactions' own
+             type badges. -->
+        <div class="home-card home-card--quick-add" id="home-quick-add"></div>
     </div>
 
     <!-- Balance details overlay: the same Available/Potential/Balance

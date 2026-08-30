@@ -216,24 +216,45 @@
     font-size: 15px;
 }
 
-/* Placeholder for the upcoming quick-add shortcuts */
-.home-card--placeholder {
-    justify-content: center;
-    border-style: dashed;
-}
-
-.home-card__placeholder-text {
+/* Quick add: three equal buttons filling the card, each opening the
+   entry-editor modal in "add" mode (setupQuickAdd()/quickAddEntry() in
+   home.js) pre-filled for that type. */
+.home-card--quick-add {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    color: var(--text-muted);
+    padding: 0;
+    gap: 0;
+    overflow: hidden;
 }
 
-.home-card__placeholder-text i {
-    font-size: 16px;
-    color: var(--accent);
-    opacity: 0.6;
+.home-quick-add-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 16px 8px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.home-quick-add-btn:not(:last-child) {
+    border-right: 1px solid var(--border);
+}
+
+.home-quick-add-btn i {
+    font-size: 20px;
+}
+
+.home-quick-add-btn:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
 }
 
 /* Main grid */

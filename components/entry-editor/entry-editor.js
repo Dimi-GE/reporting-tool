@@ -1,4 +1,5 @@
-// entry-editor.js — shared "edit committed entry" modal.
+// entry-editor.js — shared "edit committed entry" modal, also used to add a
+// new one (Home's quick-add — see home.js).
 // Loaded on demand by any view whose transaction list needs the pencil-button
 // editor (Dashboard's own Recent Transactions and Home's embedded copy), so
 // editing works regardless of which view initialized first. tx-history.js
@@ -8,12 +9,20 @@
 // during its own init — so every view can recalc/persist/refresh in whatever
 // way is right for it. This module never touches storage itself.
 //
+// A caller that wants to *add* a new entry rather than edit an existing one
+// passes a second argument: openEntryEditor(draft, { isNew: true, onSave }).
+// `draft` is a plain object (not yet part of any entries array) pre-filled
+// with sensible defaults; onSave(draft) fires instead of the default
+// window.onEntryCommitted() hook, so the caller decides how/whether to add it
+// to its own array — Cancel just closes the modal, nothing to undo.
+//
 // Loaded once for the life of the page (loadScript() skips re-injecting an
 // already-present <script src>), so the modal DOM is built exactly once no
 // matter how many views load it or how many times a view is revisited.
 
 let editorEls    = null;
 let editingEntry = null;
+let editorOnSave = null;
 
 function escHandlerEntryEditor(e) { if (e.key === 'Escape') closeEntryEditor(); }
 
@@ -22,7 +31,7 @@ function buildEntryEditor() {
     wrap.innerHTML = `
         <div class="entry-editor-backdrop" id="entry-editor-backdrop"></div>
         <div class="entry-editor" id="entry-editor" role="dialog" aria-modal="true" aria-label="Edit entry">
-            <div class="entry-editor__title">Edit Entry</div>
+            <div class="entry-editor__title" id="entry-editor-title">Edit Entry</div>
             <div class="entry-editor__grid">
                 <label class="entry-editor__field"><span>Date</span><input type="date" id="edit-date"></label>
                 <label class="entry-editor__field"><span>Amount</span><input type="number" id="edit-amount" step="0.01"></label>
@@ -49,6 +58,7 @@ function buildEntryEditor() {
     editorEls = {
         backdrop:      wrap.querySelector('#entry-editor-backdrop'),
         modal:         wrap.querySelector('#entry-editor'),
+        title:         wrap.querySelector('#entry-editor-title'),
         date:          wrap.querySelector('#edit-date'),
         amount:        wrap.querySelector('#edit-amount'),
         type:          wrap.querySelector('#edit-type'),
@@ -112,9 +122,11 @@ function updateEditCurrencyHolding() {
     }
 }
 
-function openEntryEditor(entry) {
+function openEntryEditor(entry, options) {
     if (!editorEls) buildEntryEditor();
     editingEntry = entry;
+    editorOnSave = options?.onSave || null;
+    editorEls.title.textContent = options?.isNew ? 'Add Entry' : 'Edit Entry';
 
     editorEls.currency.innerHTML = getCurrencyConfig().list
         .map(c => `<option value="${c.code}">${c.symbol ? c.code + ' ' + c.symbol : c.code}</option>`).join('');
@@ -143,6 +155,7 @@ function closeEntryEditor() {
     editorEls.backdrop.classList.remove('open');
     editorEls.modal.classList.remove('open');
     editingEntry = null;
+    editorOnSave = null;
 }
 
 function saveEntryEditor() {
@@ -165,6 +178,9 @@ function saveEntryEditor() {
     else delete editingEntry.holding;
     if (note) editingEntry.note = note; else delete editingEntry.note;
 
+    const savedEntry = editingEntry;
+    const onSave      = editorOnSave;
     closeEntryEditor();
-    window.onEntryCommitted?.();
+    if (onSave) onSave(savedEntry);
+    else window.onEntryCommitted?.();
 }

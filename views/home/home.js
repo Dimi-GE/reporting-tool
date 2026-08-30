@@ -123,6 +123,7 @@ function initHome() {
     runwayEl.classList.toggle('home-card__value--negative', runway < 0);
 
     setupBalanceDetails();
+    setupQuickAdd(entries);
 
     // --- Recent Transactions ---
     // Full tx-history component (shared with Dashboard) fitted into this
@@ -317,6 +318,65 @@ function setupBalanceDetails() {
     if (overlay.classList.contains('expanded')) {
         positionOverlay();
     }
+}
+
+// Builds the three quick-add buttons from TX_TYPE_ICONS/TX_TYPE_COLORS
+// (app.js) — the same icon/colour Recent Transactions uses for each type's
+// badge — so a rebrand there can't drift out of sync with these. Rebuilt on
+// every initHome() call; cheap enough (3 static buttons) that there's no
+// need to guard against re-creating it like the async panels do.
+const QUICK_ADD_TYPES = [
+    { type: 'income',   label: 'Income'  },
+    { type: 'expenses', label: 'Expense' },
+    { type: 'savings',  label: 'Savings' },
+];
+
+function setupQuickAdd(entries) {
+    const container = document.getElementById('home-quick-add');
+    if (!container) return;
+
+    container.innerHTML = QUICK_ADD_TYPES.map(({ type, label }) => `
+        <button class="home-quick-add-btn" data-type="${type}">
+            <i class="ti ${TX_TYPE_ICONS[type]}" style="color: ${TX_TYPE_COLORS[type]};"></i>
+            <span>${label}</span>
+        </button>
+    `).join('');
+
+    container.querySelectorAll('.home-quick-add-btn').forEach(btn => {
+        btn.onclick = () => quickAddEntry(btn.dataset.type, entries);
+    });
+}
+
+// Opens the shared entry-editor modal (components/entry-editor) in "add"
+// mode, pre-filled with a sensible default category for `type` rather than a
+// blank form — the same modal Recent Transactions' pencil-edit uses. The
+// draft only becomes a real entry if the user saves (onSave below); Cancel
+// just closes the modal, leaving `entries` untouched.
+function quickAddEntry(type, entries) {
+    const defaultCategoryLabel = type === 'expenses' ? EXPENSE_CATEGORIES[0].label
+        : type === 'income' ? 'Salary'   // skip Starting Funds — a one-time, often-locked category
+        : ENTRY_CATEGORIES[type][0];     // savings → 'Flow'
+    const category = defaultCategoryLabel.toLowerCase().replace(/ /g, '_');
+
+    const draft = {
+        date:         new Date().toISOString().slice(0, 10),
+        amount:       '',
+        type,
+        category,
+        categoryLabel: defaultCategoryLabel,
+        currency:     getRegionalCurrency(),
+        note:         '',
+    };
+    if (type === 'savings') draft.holding = HOLDING_TYPES[0].key;
+
+    window.openEntryEditor?.(draft, {
+        isNew: true,
+        onSave: (newEntry) => {
+            entries.push(newEntry);
+            commitEntries(entries);
+            initHome();
+        },
+    });
 }
 
 function renderHomeHoldings(entries, totalSaved) {

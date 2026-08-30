@@ -1,6 +1,6 @@
 # FinancialWebApp — Home View
 
-The Home view is the landing page of the app. It gives an at-a-glance picture of financial health without requiring any interaction. All data here is read-only — entries originate in the Dashboard. The view recalculates and re-renders every time it is opened.
+The Home view is the landing page of the app. It gives an at-a-glance picture of financial health, and — via **Quick Add** and the embedded Recent Transactions editor — is gradually taking over entry creation/editing from the Dashboard, which is being phased out. The view recalculates and re-renders every time it is opened.
 
 ---
 
@@ -12,7 +12,7 @@ Clicking **Details** doesn't stretch the panel in place — it grows a floating 
 
 Total Saved is not a standalone card — see **Savings Holdings** below, where it lives as that panel's bottom-line total.
 
-Beside the Balance panel, the row's second slot is a placeholder reserved for upcoming quick-add shortcuts (Income/Expense/Savings) that will open the same entry-editor modal used for editing transactions.
+Beside the Balance panel, the row's second slot is **Quick Add**: three buttons (Income / Expense / Savings), icon and colour matching that type's badge in Recent Transactions. Each opens the same entry-editor modal used for editing transactions (components/entry-editor), titled "Add Entry" instead of "Edit Entry" and pre-filled with today's date and a sensible default category for that type (Salary, Groceries, Flow respectively) rather than a blank form — the amount is left empty so Save is rejected until one is entered. Saving appends the new entry and recalculates/persists/refreshes Home exactly like editing an existing one does; Cancel discards the draft with no side effects.
 
 ---
 
