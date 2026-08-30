@@ -43,34 +43,6 @@
     gap: 14px;
 }
 
-.home-card__icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
-    background: rgba(245, 168, 0, 0.1);
-    color: var(--accent);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    font-size: 20px;
-}
-
-.home-card__body {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    flex: 1;
-    min-width: 0;
-}
-
-.home-card__label {
-    font-size: 11px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-}
-
 .home-card__value {
     font-size: 18px;
     font-weight: 600;
@@ -82,17 +54,6 @@
 
 .home-card__value--negative {
     color: #e05c5c;
-}
-
-/* Split layout: icon + a left breakdown stack + an independent result value
-   on the right. Used by Runway (Income/Expenses → net) and Available
-   (Potential/Together → all-time balance) so both cards share one fixed
-   shape regardless of whether Potential data exists. */
-.home-card__body--split {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
 }
 
 .home-card__stack {
@@ -137,6 +98,142 @@
 
 .home-card__result .home-card__value {
     font-size: 20px;
+}
+
+/* Balance panel: same .home-panel used below for Savings Holdings etc, just
+   sized to sit in the KPI row. .home-panel__body--split lays out the
+   stack + result the way the old KPI cards did. */
+.home-panel__body--split {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+/* Balance details overlay: shares the exact grow-from-panel + backdrop-blur
+   mechanic as .home-expenses-overlay/.home-expenses-backdrop (see
+   setupBalanceDetails() in home.js), just at a smaller, content-sized
+   footprint centered within .content-container instead of filling it —
+   there's no chart here, just a handful of value rows. overflow:hidden
+   clips the content during the collapse animation, when the box has
+   shrunk back toward the panel's own (much smaller) rect. */
+.home-balance-overlay {
+    position: fixed;
+    z-index: 100;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+    padding: 16px 20px;
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 10px 60px rgba(0, 0, 0, 0.6);
+}
+
+.home-balance-overlay.expanded {
+    display: flex;
+}
+
+.home-balance-overlay.home-balance-anim {
+    transition: top var(--home-expand-anim-duration) ease, left var(--home-expand-anim-duration) ease,
+                width var(--home-expand-anim-duration) ease, height var(--home-expand-anim-duration) ease;
+}
+
+.home-balance-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    background-color: rgba(0, 0, 0, 0.25);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--home-expand-anim-duration) ease;
+}
+
+.home-balance-backdrop.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Mirrors .home-panel__header so the overlay reads as a bigger version of
+   the same panel it grew from. */
+.home-balance-overlay__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 10px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.home-balance-overlay__header i {
+    font-size: 16px;
+    color: var(--accent);
+}
+
+/* Sub-header introducing the Runway rows appended below the Available/
+   Potential/Balance breakdown. */
+.home-balance-overlay__section {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border);
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.home-card__details-period {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--text-muted);
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.home-card__details-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 3px 0;
+}
+
+.home-card__details-row--result {
+    margin-top: 6px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border);
+}
+
+.home-card__details-row--result .home-card__value {
+    font-size: 15px;
+}
+
+/* Placeholder for the upcoming quick-add shortcuts */
+.home-card--placeholder {
+    justify-content: center;
+    border-style: dashed;
+}
+
+.home-card__placeholder-text {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.home-card__placeholder-text i {
+    font-size: 16px;
+    color: var(--accent);
+    opacity: 0.6;
 }
 
 /* Main grid */
@@ -291,17 +388,18 @@
 
 /* Expense Breakdown: Expand pulls the full Dashboard chart out into a fixed
    overlay, the same "grow from its card to fill .content-container" pattern
-   Recent Transactions' Full History overlay uses (see tx-history.css) — its
-   own animation-duration variable, so it never drifts if that one changes.
-   The donut panel itself is untouched by expand/collapse; this overlay is a
-   separate element entirely. Styled standalone (not relying on
-   expenses-chart.css's .link-text) since that stylesheet isn't loaded until
-   first expanded. */
+   Recent Transactions' Full History overlay uses (see tx-history.css). The
+   Balance card's Details toggle (below) reuses this exact principle at a
+   smaller footprint — one shared --home-expand-anim-duration so neither
+   drifts if the other changes. */
 :root {
     --home-expand-anim-duration: 0.5s;
 }
 
-.home-expenses-toggle {
+/* Shared "opens a floating overlay" link style — used by Expense Breakdown's
+   Expand and the Balance card's Details. margin-left:auto pushes it to the
+   end of whatever flex row it sits in (a panel header, or its own footer). */
+.home-link-toggle {
     margin-left: auto;
     font-size: 12px;
     color: var(--text-muted);
@@ -311,7 +409,7 @@
     transition: color 0.2s;
 }
 
-.home-expenses-toggle:hover {
+.home-link-toggle:hover {
     color: var(--text-primary);
 }
 

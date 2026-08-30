@@ -67,6 +67,8 @@ function initHome() {
         .toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
     const periodEl = document.getElementById('home-health-period');
     if (periodEl) periodEl.textContent = periodLabel;
+    const runwayPeriodEl = document.getElementById('home-runway-period');
+    if (runwayPeriodEl) runwayPeriodEl.textContent = periodLabel;
     const monthEntries     = ref.entries;
     const monthIncome      = ref.income;
     const monthExpenses    = ref.expenses;
@@ -86,10 +88,33 @@ function initHome() {
     const available = totals.flow;
     const potential = totals.potential;
 
-    // --- KPI Cards ---
+    // --- Balance panel ---
+    // Available and Potential are the two stacked components; Balance
+    // (Available + potential) is the panel's headline result, on the right —
+    // always shown (zero Potential when no Potential entries exist) so the
+    // panel keeps a fixed layout regardless of solo/partnered use. Each value
+    // is mirrored into the Details overlay (the "-overlay" ids), which shows
+    // this same breakdown alongside Runway rather than replacing it.
+    function setValue(id, text, negClass, negative) {
+        [id, id + '-overlay'].forEach(elId => {
+            const el = document.getElementById(elId);
+            if (!el) return;
+            el.textContent = text;
+            if (negClass) el.classList.toggle(negClass, negative);
+        });
+    }
+
+    setValue('home-available', available.toFixed(2), 'home-card__stack-value--negative', available < 0);
+
+    const together = available + potential;
+    setValue('home-potential', (potential >= 0 ? '+ ' : '− ') + Math.abs(potential).toFixed(2),
+        'home-card__stack-value--negative', potential < 0);
+    setValue('home-together', together.toFixed(2), 'home-card__value--negative', together < 0);
+
     // Runway: this month's income vs expenses only — the in-month drift in
     // funds. Deliberately ignores Starting Funds and all prior months, so it
-    // reads independently of Available (the all-time balance beside it).
+    // reads independently of the Balance above. Shown in the Balance panel's
+    // Details overlay (setupBalanceDetails()) rather than its own card.
     const runway = monthIncome - monthExpenses;
     document.getElementById('home-runway-income').textContent   = monthIncome.toFixed(2);
     document.getElementById('home-runway-expenses').textContent = monthExpenses.toFixed(2);
@@ -97,21 +122,7 @@ function initHome() {
     runwayEl.textContent = runway.toFixed(2);
     runwayEl.classList.toggle('home-card__value--negative', runway < 0);
 
-    // Available and Potential are the two stacked components; Together
-    // (Available + potential) is the card's headline result, on the right —
-    // always shown (zero Potential when no Potential entries exist) so both
-    // KPI cards keep the same fixed layout.
-    const availEl = document.getElementById('home-available');
-    availEl.textContent = available.toFixed(2);
-    availEl.classList.toggle('home-card__stack-value--negative', available < 0);
-
-    const together = available + potential;
-    const potEl = document.getElementById('home-potential');
-    potEl.textContent = (potential >= 0 ? '+ ' : '− ') + Math.abs(potential).toFixed(2);
-    potEl.classList.toggle('home-card__stack-value--negative', potential < 0);
-    const togEl = document.getElementById('home-together');
-    togEl.textContent = together.toFixed(2);
-    togEl.classList.toggle('home-card__value--negative', together < 0);
+    setupBalanceDetails();
 
     // --- Recent Transactions ---
     // Full tx-history component (shared with Dashboard) fitted into this
@@ -206,6 +217,106 @@ function renderHomeTxHistory(entries) {
             renderTxList(entries);
             slot.dataset.loaded = 'true';
         });
+}
+
+// Wires the Balance card's "Details" toggle. Rather than stretching the card
+// in place, this follows setupExpenseBreakdown()'s exact principle: a FLIP
+// animation grows a fixed-position overlay from the card's own rect to a
+// centered footprint, with a blurred backdrop that dismisses it on click. The
+// one difference is the overlay's content is static markup already in
+// home.html (the same Available/Potential/Balance breakdown plus this
+// month's Runway), so there's no async component to load — expand()/
+// collapse() run synchronously.
+function setupBalanceDetails() {
+    const card     = document.getElementById('home-balance-card');
+    const toggle   = document.getElementById('home-balance-toggle');
+    const overlay  = document.getElementById('home-balance-overlay');
+    const backdrop = document.getElementById('home-balance-backdrop');
+    if (!card || !toggle || !overlay || !backdrop) return;
+
+    let animToken = 0;
+
+    function getAnimMs() {
+        const raw = getComputedStyle(document.documentElement)
+            .getPropertyValue('--home-expand-anim-duration').trim();
+        const value = parseFloat(raw);
+        if (!value) return 500;
+        return raw.endsWith('ms') ? value : value * 1000;
+    }
+
+    // A small content-sized box, horizontally centered within
+    // .content-container (same bounds the chart overlay uses) rather than
+    // the full window — unlike the chart, it doesn't need that full width,
+    // just to stay inside the same reading column instead of the whole page.
+    function computeExpandedRect() {
+        const content = document.querySelector('.content-container');
+        const contentRect = content
+            ? content.getBoundingClientRect()
+            : { left: 20, width: window.innerWidth - 40 };
+        const width  = Math.min(360, contentRect.width - 40);
+        const height = Math.min(320, window.innerHeight - 96);
+        return {
+            top:  (window.innerHeight - height) / 2,
+            left: contentRect.left + (contentRect.width - width) / 2,
+            width,
+            height,
+        };
+    }
+
+    function applyRect(rect) {
+        overlay.style.top    = rect.top + 'px';
+        overlay.style.left   = rect.left + 'px';
+        overlay.style.width  = rect.width + 'px';
+        overlay.style.height = rect.height + 'px';
+    }
+
+    function positionOverlay() {
+        if (!overlay.classList.contains('expanded')) return;
+        applyRect(computeExpandedRect());
+    }
+
+    function expand() {
+        animToken++;
+        const startRect = card.getBoundingClientRect();
+
+        overlay.classList.add('expanded');
+        backdrop.classList.add('active');
+        toggle.textContent = 'Close';
+
+        applyRect(startRect);
+        void overlay.offsetHeight;   // force reflow before enabling the transition
+        overlay.classList.add('home-balance-anim');
+        applyRect(computeExpandedRect());
+
+        window.addEventListener('resize', positionOverlay);
+    }
+
+    function collapse() {
+        const myToken = ++animToken;
+        window.removeEventListener('resize', positionOverlay);
+
+        backdrop.classList.remove('active');
+        toggle.textContent = 'Details';
+        applyRect(card.getBoundingClientRect());
+
+        setTimeout(() => {
+            if (myToken !== animToken) return;   // a new expand()/collapse() has since started
+            overlay.classList.remove('expanded', 'home-balance-anim');
+            overlay.style.top = overlay.style.left = overlay.style.width = overlay.style.height = '';
+        }, getAnimMs());
+    }
+
+    toggle.onclick = () => {
+        overlay.classList.contains('expanded') ? collapse() : expand();
+    };
+    backdrop.onclick = collapse;
+
+    // If Home is re-rendering in place (e.g. after committing an edited
+    // entry) while the overlay is already open, just keep it positioned —
+    // its content (Balance breakdown + Runway) was already re-rendered above.
+    if (overlay.classList.contains('expanded')) {
+        positionOverlay();
+    }
 }
 
 function renderHomeHoldings(entries, totalSaved) {

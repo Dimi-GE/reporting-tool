@@ -7,28 +7,19 @@
 
     <!-- KPI Row -->
     <div class="home-kpi-row">
-        <div class="home-card home-card--split">
-            <div class="home-card__icon"><i class="ti ti-scale"></i></div>
-            <div class="home-card__body home-card__body--split">
-                <div class="home-card__stack">
-                    <div class="home-card__stack-row">
-                        <span class="home-card__stack-label">Income</span>
-                        <span class="home-card__stack-value home-card__stack-value--income" id="home-runway-income">--</span>
-                    </div>
-                    <div class="home-card__stack-row">
-                        <span class="home-card__stack-label">Expenses</span>
-                        <span class="home-card__stack-value home-card__stack-value--expense" id="home-runway-expenses">--</span>
-                    </div>
-                </div>
-                <div class="home-card__result">
-                    <span class="home-card__label">Runway</span>
-                    <span class="home-card__value" id="home-runway">--</span>
-                </div>
+        <!-- Balance panel: same header treatment as Expense Breakdown below —
+             icon, title, and a "Details" link. Clicking it doesn't stretch
+             this panel in place; it grows a floating overlay from the
+             panel's own rect (see setupBalanceDetails() in home.js), showing
+             this same Available/Potential/Balance breakdown plus the current
+             month's Runway underneath. -->
+        <div class="home-panel" id="home-balance-card">
+            <div class="home-panel__header">
+                <i class="ti ti-cash"></i>
+                <span>Balance</span>
+                <span class="home-link-toggle" id="home-balance-toggle">Details</span>
             </div>
-        </div>
-        <div class="home-card home-card--split">
-            <div class="home-card__icon"><i class="ti ti-cash"></i></div>
-            <div class="home-card__body home-card__body--split">
+            <div class="home-panel__body home-panel__body--split">
                 <div class="home-card__stack">
                     <div class="home-card__stack-row">
                         <span class="home-card__stack-label">Available</span>
@@ -40,12 +31,61 @@
                     </div>
                 </div>
                 <div class="home-card__result">
-                    <span class="home-card__label">Together</span>
                     <span class="home-card__value" id="home-together">--</span>
                 </div>
             </div>
         </div>
+
+        <!-- Placeholder for the upcoming quick-add shortcuts (Income/Expense/
+             Savings), which will open the same entry-editor modal used for
+             editing transactions. -->
+        <div class="home-card home-card--placeholder">
+            <span class="home-card__placeholder-text"><i class="ti ti-square-rounded-plus"></i> Quick add — coming soon</span>
+        </div>
     </div>
+
+    <!-- Balance details overlay: the same Available/Potential/Balance
+         breakdown as the panel above, plus this calendar month's Runway
+         (Income − Expenses) underneath — grown out from the panel the same
+         way Expense Breakdown's Expand grows its overlay from the donut
+         panel. Static content (no async component to load), unlike the
+         chart overlay. -->
+    <div class="home-balance-overlay" id="home-balance-overlay">
+        <div class="home-balance-overlay__header">
+            <i class="ti ti-cash"></i>
+            <span>Balance</span>
+        </div>
+        <div class="home-card__details-row">
+            <span class="home-card__stack-label">Available</span>
+            <span class="home-card__stack-value" id="home-available-overlay">--</span>
+        </div>
+        <div class="home-card__details-row">
+            <span class="home-card__stack-label">Potential</span>
+            <span class="home-card__stack-value" id="home-potential-overlay">--</span>
+        </div>
+        <div class="home-card__details-row home-card__details-row--result">
+            <span class="home-card__stack-label">Balance</span>
+            <span class="home-card__value" id="home-together-overlay">--</span>
+        </div>
+
+        <div class="home-balance-overlay__section">
+            <span>Runway</span>
+            <span class="home-card__details-period" id="home-runway-period"></span>
+        </div>
+        <div class="home-card__details-row">
+            <span class="home-card__stack-label">Income</span>
+            <span class="home-card__stack-value home-card__stack-value--income" id="home-runway-income">--</span>
+        </div>
+        <div class="home-card__details-row">
+            <span class="home-card__stack-label">Expenses</span>
+            <span class="home-card__stack-value home-card__stack-value--expense" id="home-runway-expenses">--</span>
+        </div>
+        <div class="home-card__details-row home-card__details-row--result">
+            <span class="home-card__stack-label">Net</span>
+            <span class="home-card__value" id="home-runway">--</span>
+        </div>
+    </div>
+    <div class="home-balance-backdrop" id="home-balance-backdrop"></div>
 
     <!-- Main content grid -->
     <div class="home-grid">
@@ -80,7 +120,7 @@
             <div class="home-panel__header">
                 <i class="ti ti-chart-donut"></i>
                 <span>Expense Breakdown</span>
-                <span class="home-expenses-toggle" id="home-expenses-toggle">Expand</span>
+                <span class="home-link-toggle" id="home-expenses-toggle">Expand</span>
             </div>
             <div class="home-panel__body home-panel__body--center">
                 <div class="home-donut-wrap">
